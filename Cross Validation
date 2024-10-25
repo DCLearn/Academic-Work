@@ -1,0 +1,122 @@
+a = read.table("/cloud/project/Auto.tsv",header=T)
+
+library(tidyverse)
+library(ggplot2)
+library(caret)
+
+head(a)
+
+mod1 = lm(mpg~cylinders + horsepower + weight, data = a)
+mod2 = lm(mpg ~ cylinders * horsepower + weight, data = a)
+mod3 = lm(mpg ~ cylinders + horsepower * weight, data = a)
+mod4 = lm(mpg ~ cylinders * horsepower * weight, data = a) 
+
+test_mse = function(mod, dat, response) {
+  preds = predict(mod, dat)
+  return(mean((as.numeric(as.matrix(dat[,response]))-preds)^2))
+}
+
+poly_mod = function(dat, response, pred, deg) {
+  f = as.formula(paste0(response, ' ~ poly(', pred, ', ', deg, ')'))
+  return(lm(f, dat))
+}
+
+knn_mod = function(dat, response, pred, k) {
+  f = as.formula(paste0(response, ' ~ ', pred))
+  mod = knnreg(f, data=dat, k=k)
+  mod$residuals = (as.numeric(as.matrix(dat[,response])) - predict(mod, dat))
+  return(mod)
+}
+
+
+cv = function(dat, response, pred, deg=1, k=5, seed = 1, TRAINFUN=poly_mod) {
+  set.seed(seed)
+  
+  folds = as.numeric(cut(1:nrow(dat), breaks = k))
+  folds = sample(folds,length(folds),replace=F)
+  
+  fold_list = list()
+  
+  for(i in 1:k) {
+    train = which(folds != i)
+    test = which(folds == i)
+    
+    mod_list = list()
+    train_mse_list = list()
+    test_mse_list = list()  
+    
+    for(j in 1:deg) {
+      mod = TRAINFUN(dat[train,], response, pred, j)
+      train_mse_list[[j]] = mean(mod$residuals^2)
+      test_mse_list[[j]] = test_mse(mod, dat[test,], response)
+    }
+    
+    fold_list[[i]] = data.frame(TrainMSE = unlist(train_mse_list), 
+                                TestMSE = unlist(test_mse_list), 
+                                Fold = i,
+                                Degree = 1:deg)
+    
+  }
+  
+  fold_res = do.call(rbind, fold_list)
+  
+}
+
+
+new_cv = function(mod_new, dat, response, deg=1, k=5, seed = 1) {
+  set.seed(seed)
+  
+  folds = as.numeric(cut(1:nrow(dat), breaks = k))
+  folds = sample(folds,length(folds),replace=F)
+  
+  fold_list = list()
+
+  for(i in 1:k) {
+    train = which(folds != i)
+    test = which(folds == i)
+    
+    mod_list = list()
+    train_mse_list = list()
+    test_mse_list = list()  
+    
+    for(j in 1:deg) {
+      mod=lm(as.formula(mod_new), data = dat[train,])
+      train_mse_list[[j]] = mean(mod$residuals^2)
+      test_mse_list[[j]] = test_mse(mod, dat[test,], response)
+    }
+    
+    fold_list[[i]] = data.frame(TrainMSE = unlist(train_mse_list), 
+                                TestMSE = unlist(test_mse_list), 
+                                Fold = i,
+                                Degree = 1:deg)
+    
+  }
+  
+  fold_res = do.call(rbind, fold_list)
+  
+}
+
+
+
+res1 = new_cv(mod_new = mod1, dat = a, response = 'mpg')
+print(res1)
+(mean(res1$TestMSE))
+
+
+res2 = new_cv(mod_new = mod2, dat = a, response = 'mpg')
+print(res2)
+mean(res2$TestMSE)
+
+
+res3 = new_cv(mod_new = mod3, dat = a, response = 'mpg')
+print(res3)
+(mean(res3$TestMSE))
+
+res4 = new_cv(mod_new = mod4, dat = a, response = 'mpg')
+print(res4)
+(mean(res4$TestMSE))
+
+test_mse(mod = mod1, dat = a, response = 'mpg')
+test_mse(mod = mod2, dat = a, response = 'mpg')
+test_mse(mod = mod3, dat = a, response = 'mpg')
+test_mse(mod = mod4, dat = a, response = 'mpg')

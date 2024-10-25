@@ -1,0 +1,155 @@
+a=read.table("/cloud/project/iris.tsv",header=T)
+a$Viriginica=(a$Species == "virginica")
+head(a)
+
+sigmoid = function(z){
+  return(1/(1+exp(-z)))
+}
+mod = glm(Viriginica ~ Petal.Width, data = a, family='binomial')
+summary(mod)
+
+
+X = data.matrix(data.frame(c(a$Petal.Width[1:75]),(a$Petal.Width[76:150])))
+
+X = data.matrix(data.frame(a$Petal.Width))
+
+X = cbind(1,X)
+alpha = 0.0005
+beta = rep(0, 2)
+
+
+grad_asc = function(X, beta, y, max.iter = 10000, alpha = 0.0005, delta = 0.0001) {
+  beta_new = beta
+  for(j in 1:max.iter) {
+    for(i in 1:nrow(X)) {
+      z = X %*% beta
+      px = sigmoid(z[i])
+      error = y[i] - px
+      gradient = error * X[i,]
+      beta_new = beta_new + alpha * gradient
+    }
+    
+    if(max(abs(beta - beta_new)) < delta) break
+    beta = beta_new
+  }
+  
+  return(beta)
+}
+
+beta=grad_asc(X, beta, y=a$Viriginica)
+
+print(beta)
+
+
+b= data.frame(a$Species[(a$Species == "virginica"|a$Species == "versicolor")])
+
+b$Species=b$a.Species..a.Species.....virginica....a.Species.....versicolor...
+
+b$Petal.Width = a$Petal.Width[(a$Species == "virginica"|a$Species == "versicolor")]
+
+width = c(b$Petal.Width[1:25],b$Petal.Width[51:75])
+specie=(c(b$Species[1:25],b$Species[51:75])) 
+
+d = data.frame(width,specie)
+
+e= data.frame((c(b$Petal.Width[26:50],b$Petal.Width[76:100])), (c(b$Species[26:50],b$Species[76:100])))
+d$Viriginica=(d$specie == "virginica")
+
+e$Viriginica=(e$X.c.b.Species.26.50...b.Species.76.100... == "virginica")
+
+f = glm(d$Viriginica~d$width)
+f
+
+petal_wid = as.list(e$X.c.b.Petal.Width.26.50...b.Petal.Width.76.100...)
+
+g = fitted.values(f, e$X.c.b.Petal.Width.26.50...b.Petal.Width.76.100..., 50)
+h = predict.glm(f, newdata = (petal_wid))
+
+length(h)
+
+accurate=((h > 0.50) == e$Viriginica)
+
+table(accurate)
+
+#Question 6
+
+true_pos = 0
+false_neg = 0
+false_pos = 0
+true_neg = 0
+
+for (i in c(1:(length(h)))){
+  h = (h > 0.50) 
+  if (h[i] == TRUE & e$Viriginica[i] == TRUE){
+    true_pos = true_pos + 1
+  }  else if (h[i] == TRUE & e$Viriginica[i] == FALSE){
+    false_pos = false_pos + 1
+  } else if (h[i] == FALSE & e$Viriginica[i] == TRUE){
+    false_neg = false_neg + 1
+  } else if (h[i] == FALSE & e$Viriginica[i] == FALSE){
+    true_neg = true_neg +1
+  }
+}
+
+
+false_pos
+false_neg
+true_neg
+true_pos
+
+(which(a$Species == "versicolor"))
+
+false.true=c(rep(FALSE, 50), rep(TRUE, 50))
+false.true.width = a$Petal.Width[51:150]
+
+
+X1 = data.matrix(data.frame(false.true))
+X1
+X1 = cbind(1,X1)
+alpha = 0.0005
+beta = rep(0, 2)
+
+grad_asc = function(X, beta, y, max.iter = 10000, alpha =0.0005, delta = 0.0001) {
+  beta_new = beta
+  for(j in 1:max.iter) {
+    for(i in 1:nrow(X)) {
+      z = X %*% beta
+      px = sigmoid(z[i])
+      error = y[i] - px
+      gradient = error * X[i,]
+      beta_new = beta_new + alpha * gradient
+    }
+    
+    if(max(abs(beta - beta_new)) < delta) break
+    beta = beta_new
+  }
+  
+  return(beta)
+}
+
+beta0=grad_asc(X1, beta, y = false.true.width)
+
+print(beta0)
+
+
+grad_asc = function(X, beta, y, max.iter = 10000, alpha = 5*(10^(-10)), delta = 0.0001) {
+  beta_new = beta
+  for(j in 1:max.iter) {
+    for(i in 1:nrow(X)) {
+      z = X %*% beta
+      px = sigmoid(z[i])
+      error = y[i] - px
+      gradient = error * X[i,]
+      beta_new = beta_new + alpha * gradient
+    }
+    
+    if(max(abs(beta - beta_new)) < delta) break
+    beta = beta_new
+  }
+  
+  return(beta)
+}
+
+beta1=grad_asc(X1, beta, y = c(a$Petal.Width[51:100],a$Petal.Width[101:150]))
+
+print(beta1)
